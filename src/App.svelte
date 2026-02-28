@@ -1,0 +1,93 @@
+<script lang="ts">
+  import UnitEditor from './components/UnitEditor.svelte'
+  import { runMonteCarlo, runExact } from './lib/engine'
+  import type { BattleInput, EngineResult } from './lib/types'
+  import { onMount } from 'svelte'
+
+  let mode: 'Fast' | 'Exact' = 'Fast'
+  let iterations = 100000
+  let seed: number | null = null
+  let result: EngineResult | null = null
+  let computing = false
+
+  const defaultInput: BattleInput = {
+    good: [{ Fv: 4, S: 4, D: 5, A: 1, twoHanded: false, Sv: 4, SS: 2, ranged: true }],
+    evil: [{ Fv: 4, S: 4, D: 5, A: 1, twoHanded: false, Sv: 4, SS: 2, ranged: true }],
+  }
+
+  let input: BattleInput = structuredClone(defaultInput)
+
+  async function calculate() {
+    computing = true
+    try {
+      if (mode === 'Fast') {
+        result = await runMonteCarlo(input, iterations, seed ?? undefined)
+      } else {
+        result = await runExact(input)
+      }
+    } catch (e) {
+      result = null
+      // show error as alert for now
+      alert(String(e))
+    } finally {
+      computing = false
+    }
+  }
+
+  onMount(() => {
+    // no-op
+  })
+</script>
+
+<main>
+  <h1>ME SBG Battle Calculator (scaffold)</h1>
+  <div>
+    <label>Mode:
+      <select bind:value={mode}>
+        <option value="Fast">Fast (Monte Carlo)</option>
+        <option value="Exact">Exact</option>
+      </select>
+    </label>
+    <label style="margin-left:1rem">Iterations:
+      <input type="number" bind:value={iterations} min={1} />
+    </label>
+    <label style="margin-left:1rem">Seed (optional):
+      <input type="number" bind:value={seed} />
+    </label>
+    <button on:click={calculate} disabled={computing}>
+      {computing ? 'Computing…' : 'Calculate'}
+    </button>
+  </div>
+
+  <section style="display:flex; flex-direction:column; gap:1rem; margin-top:1rem">
+    <div>
+      <h3>Good units</h3>
+      {#each input.good as unit, idx}
+        <UnitEditor {unit} {idx} disableD={idx !== 0} on:remove={() => input.good.splice(idx, 1)} />
+      {/each}
+      <button on:click={() => input.good.push({ Fv: 4, S: 4, D: input.good[0]?.D ?? 5, A: 1, twoHanded: false, Sv: 4, SS: 2, ranged: true })}>Add Good Unit</button>
+    </div>
+
+    <div>
+      <h3>Evil units</h3>
+      {#each input.evil as unit, idx}
+        <UnitEditor {unit} {idx} disableD={idx !== 0} on:remove={() => input.evil.splice(idx, 1)} />
+      {/each}
+      <button on:click={() => input.evil.push({ Fv: 4, S: 4, D: input.evil[0]?.D ?? 5, A: 1, twoHanded: false, Sv: 4, SS: 2, ranged: true })}>Add Evil Unit</button>
+    </div>
+  </section>
+
+  {#if result}
+    <section>
+      <h2>Result</h2>
+      <div>Mode: {result.mode}</div>
+      <div>Computation time (ms): {result.computationTimeMs.toFixed(3)}</div>
+      <pre>{JSON.stringify(result.probabilities, null, 2)}</pre>
+    </section>
+  {/if}
+</main>
+
+<style>
+  main { padding: 1rem; font-family: system-ui, Arial }
+  pre { background: #f7f7f7; padding: 0.5rem }
+</style>
