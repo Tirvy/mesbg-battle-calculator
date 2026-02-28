@@ -4,8 +4,9 @@ import * as s1 from './scenarios/scenario1'
 import * as s2 from './scenarios/scenario2'
 import * as s3 from './scenarios/scenario3'
 import * as s4 from './scenarios/scenario4'
+import * as s5 from './scenarios/scenario5'
 
-const scenarios = [s1, s2, s3]
+const scenarios = [s1, s2, s3, s5]
 
 describe('Engine scaffold tests', () => {
   it('Monte Carlo returns structure and within tolerance for simple scenarios', async () => {

@@ -1,6 +1,6 @@
 import type { BattleInput } from '../../src/lib/types'
 
-// Scenario designed to include a HARD WOUND possibility (large D)
+// Fv differernce
 export const input: BattleInput = {
   good: [{ Fv: 4, S: 4, D: 9, A: 1, twoHanded: false, Sv: 4, SS: 2 }],
   evil: [{ Fv: 3, S: 2, D: 6, A: 1, twoHanded: false, Sv: 4, SS: 2 }],

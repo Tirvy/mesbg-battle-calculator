@@ -1,5 +1,6 @@
 import type { BattleInput } from '../../src/lib/types'
 
+// two-handed vs one-handed
 export const input: BattleInput = {
   good: [
     { Fv: 4, S: 5, D: 6, A: 1, twoHanded: true, Sv: 4, SS: 2 },
