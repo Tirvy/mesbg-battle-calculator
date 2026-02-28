@@ -10,9 +10,23 @@
   let result: EngineResult | null = null
   let computing = false
 
+  // utility to produce a fresh default unit object
+  function getDefaultUnit(): BattleInput['good'][0] {
+    return {
+      Fv: 4,
+      S: 4,
+      D: 5,
+      A: 1,
+      twoHanded: false,
+      Sv: 4,
+      SS: 2,
+      ranged: true,
+    }
+  }
+
   const defaultInput: BattleInput = {
-    good: [{ Fv: 4, S: 4, D: 5, A: 1, twoHanded: false, Sv: 4, SS: 2, ranged: true }],
-    evil: [{ Fv: 4, S: 4, D: 5, A: 1, twoHanded: false, Sv: 4, SS: 2, ranged: true }],
+    good: [getDefaultUnit()],
+    evil: [getDefaultUnit()],
   }
 
   let input: BattleInput = structuredClone(defaultInput)
@@ -65,7 +79,7 @@
       {#each input.good as unit, idx}
         <UnitEditor {unit} {idx} disableD={idx !== 0} on:remove={() => input.good.splice(idx, 1)} />
       {/each}
-      <button on:click={() => input.good.push({ Fv: 4, S: 4, D: input.good[0]?.D ?? 5, A: 1, twoHanded: false, Sv: 4, SS: 2, ranged: true })}>Add Good Unit</button>
+      <button on:click={() => input.good.push(getDefaultUnit())}>Add Good Unit</button>
     </div>
 
     <div>
@@ -73,7 +87,7 @@
       {#each input.evil as unit, idx}
         <UnitEditor {unit} {idx} disableD={idx !== 0} on:remove={() => input.evil.splice(idx, 1)} />
       {/each}
-      <button on:click={() => input.evil.push({ Fv: 4, S: 4, D: input.evil[0]?.D ?? 5, A: 1, twoHanded: false, Sv: 4, SS: 2, ranged: true })}>Add Evil Unit</button>
+      <button on:click={() => input.evil.push(getDefaultUnit())}>Add Evil Unit</button>
     </div>
   </section>
 

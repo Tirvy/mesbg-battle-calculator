@@ -17,11 +17,12 @@ export function makeEmptyProb(): Probabilities {
 export function perDieDist(unit: Unit) {
   const p = new Array(7).fill(0)
   if (unit.twoHanded) {
+    p[1] = 2 / 6
     p[2] = 1 / 6
     p[3] = 1 / 6
     p[4] = 1 / 6
     p[5] = 1 / 6
-    p[6] = 2 / 6
+    p[6] = 0
   } else {
     for (let v = 1; v <= 6; v++) p[v] = 1 / 6
   }

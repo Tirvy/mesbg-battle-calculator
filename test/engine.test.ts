@@ -26,6 +26,11 @@ describe('Engine scaffold tests', () => {
       const ex = await runExact(s.input)
       expect(ex.mode).toBe('Exact')
       expect(ex.probabilities).toHaveProperty('duelGoodWin')
+      expect(ex.probabilities).toHaveProperty('duelEvilWin')
+
+      // Compare to expected within tolerance
+      expect(Math.abs((ex.probabilities.duelGoodWin ?? 0) - s.expected.duelGoodWin)).toBeLessThanOrEqual(s.tolerance)
+      expect(Math.abs((ex.probabilities.duelEvilWin ?? 0) - s.expected.duelEvilWin)).toBeLessThanOrEqual(s.tolerance)
     }
   })
 
