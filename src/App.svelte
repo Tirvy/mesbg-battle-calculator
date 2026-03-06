@@ -2,13 +2,12 @@
   import UnitEditor from './components/UnitEditor.svelte'
   import { runMonteCarlo, runExact } from './lib/engine'
   import type { BattleInput, EngineResult } from './lib/types'
-  import { onMount } from 'svelte'
 
-  let mode: 'Fast' | 'Exact' = 'Fast'
-  let iterations = 100000
-  let seed: number | null = null
-  let result: EngineResult | null = null
-  let computing = false
+  let mode: 'Fast' | 'Exact' = $state('Fast')
+  let iterations = $state(100000)
+  let seed: number | null = $state(null)
+  let result: EngineResult | null = $state(null)
+  let computing = $state(false)
 
   // utility to produce a fresh default unit object
   function getDefaultUnit(): BattleInput['good'][0] {
@@ -29,7 +28,7 @@
     evil: [getDefaultUnit()],
   }
 
-  let input: BattleInput = structuredClone(defaultInput)
+  let input: BattleInput = $state(structuredClone(defaultInput))
 
   async function calculate() {
     computing = true
@@ -47,10 +46,6 @@
       computing = false
     }
   }
-
-  onMount(() => {
-    // no-op
-  })
 </script>
 
 <main>
@@ -68,7 +63,7 @@
     <label style="margin-left:1rem">Seed (optional):
       <input type="number" bind:value={seed} />
     </label>
-    <button on:click={calculate} disabled={computing}>
+    <button onclick={calculate} disabled={computing}>
       {computing ? 'Computing…' : 'Calculate'}
     </button>
   </div>
@@ -77,17 +72,17 @@
     <div>
       <h3>Good units</h3>
       {#each input.good as unit, idx}
-        <UnitEditor {unit} {idx} disableD={idx !== 0} on:remove={() => input.good.splice(idx, 1)} />
+        <UnitEditor {unit} {idx} disableD={idx !== 0} onremove={() => input.good = [...input.good.slice(0, idx), ...input.good.slice(idx + 1)]} />
       {/each}
-      <button on:click={() => input.good.push(getDefaultUnit())}>Add Good Unit</button>
+      <button onclick={() => input.good = [...input.good, getDefaultUnit()]}>Add Good Unit</button>
     </div>
 
     <div>
       <h3>Evil units</h3>
       {#each input.evil as unit, idx}
-        <UnitEditor {unit} {idx} disableD={idx !== 0} on:remove={() => input.evil.splice(idx, 1)} />
+        <UnitEditor {unit} {idx} disableD={idx !== 0} onremove={() => input.evil = [...input.evil.slice(0, idx), ...input.evil.slice(idx + 1)]} />
       {/each}
-      <button on:click={() => input.evil.push(getDefaultUnit())}>Add Evil Unit</button>
+      <button onclick={() => input.evil = [...input.evil, getDefaultUnit()]}>Add Evil Unit</button>
     </div>
   </section>
 
@@ -105,3 +100,4 @@
   main { padding: 1rem; font-family: system-ui, Arial }
   pre { background: #f7f7f7; padding: 0.5rem }
 </style>
+
