@@ -14,19 +14,18 @@ export type BattleInput = {
   evil: Unit[]
 }
 
+export type PlayerProbabilities = {
+  duelWin: number
+  pSingleAttackWound?: number
+  pAtLeast1Wound?: number
+  pAtLeast2Wounds?: number
+  pAtLeast3Wounds?: number
+  rangedWound?: number
+}
+
 export type Probabilities = {
-  duelGoodWin: number
-  duelEvilWin: number
-  pSingleAttackWoundGood?: number
-  pSingleAttackWoundEvil?: number
-  pAtLeast1Good?: number
-  pAtLeast2Good?: number
-  pAtLeast3Good?: number
-  pAtLeast1Evil?: number
-  pAtLeast2Evil?: number
-  pAtLeast3Evil?: number
-  rangedWoundGood?: number
-  rangedWoundEvil?: number
+  good: PlayerProbabilities
+  evil: PlayerProbabilities
 }
 
 export type EngineResult = {

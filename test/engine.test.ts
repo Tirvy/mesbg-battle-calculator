@@ -13,12 +13,12 @@ describe('Engine scaffold tests', () => {
     for (const s of scenarios) {
       const mc = await runMonteCarlo(s.input, 2000, 12345)
       // Validate basic shape
-      expect(mc.probabilities).toHaveProperty('duelGoodWin')
-      expect(mc.probabilities).toHaveProperty('duelEvilWin')
+      expect(mc.probabilities.good).toHaveProperty('duelWin')
+      expect(mc.probabilities.evil).toHaveProperty('duelWin')
 
       // Compare to expected within tolerance
-      expect(Math.abs((mc.probabilities.duelGoodWin ?? 0) - s.expected.duelGoodWin)).toBeLessThanOrEqual(s.tolerance)
-      expect(Math.abs((mc.probabilities.duelEvilWin ?? 0) - s.expected.duelEvilWin)).toBeLessThanOrEqual(s.tolerance)
+      expect(Math.abs((mc.probabilities.good.duelWin ?? 0) - s.expected.good.duelWin)).toBeLessThanOrEqual(s.tolerance)
+      expect(Math.abs((mc.probabilities.evil.duelWin ?? 0) - s.expected.evil.duelWin)).toBeLessThanOrEqual(s.tolerance)
     }
   })
 
@@ -26,12 +26,12 @@ describe('Engine scaffold tests', () => {
     for (const s of scenarios) {
       const ex = await runExact(s.input)
       expect(ex.mode).toBe('Exact')
-      expect(ex.probabilities).toHaveProperty('duelGoodWin')
-      expect(ex.probabilities).toHaveProperty('duelEvilWin')
+      expect(ex.probabilities.good).toHaveProperty('duelWin')
+      expect(ex.probabilities.evil).toHaveProperty('duelWin')
 
       // Compare to expected within tolerance
-      expect(Math.abs((ex.probabilities.duelGoodWin ?? 0) - s.expected.duelGoodWin)).toBeLessThanOrEqual(s.tolerance)
-      expect(Math.abs((ex.probabilities.duelEvilWin ?? 0) - s.expected.duelEvilWin)).toBeLessThanOrEqual(s.tolerance)
+      expect(Math.abs((ex.probabilities.good.duelWin ?? 0) - s.expected.good.duelWin)).toBeLessThanOrEqual(s.tolerance)
+      expect(Math.abs((ex.probabilities.evil.duelWin ?? 0) - s.expected.evil.duelWin)).toBeLessThanOrEqual(s.tolerance)
     }
   })
 

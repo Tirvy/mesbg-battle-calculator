@@ -85,14 +85,14 @@ export async function runExact(input: BattleInput): Promise<EngineResult> {
     }
   }
 
-  probabilities.duelGoodWin = duelGood
-  probabilities.duelEvilWin = duelEvil
-  probabilities.pAtLeast1Good = goodAtLeast1
-  probabilities.pAtLeast2Good = goodAtLeast2
-  probabilities.pAtLeast3Good = goodAtLeast3
-  probabilities.pAtLeast1Evil = evilAtLeast1
-  probabilities.pAtLeast2Evil = evilAtLeast2
-  probabilities.pAtLeast3Evil = evilAtLeast3
+  probabilities.good.duelWin = duelGood
+  probabilities.evil.duelWin = duelEvil
+  probabilities.good.pAtLeast1Wound = goodAtLeast1
+  probabilities.good.pAtLeast2Wounds = goodAtLeast2
+  probabilities.good.pAtLeast3Wounds = goodAtLeast3
+  probabilities.evil.pAtLeast1Wound = evilAtLeast1
+  probabilities.evil.pAtLeast2Wounds = evilAtLeast2
+  probabilities.evil.pAtLeast3Wounds = evilAtLeast3
 
   const totalGoodAttacks = input.good.reduce((s, u) => s + Math.max(0, Math.floor(u.A)), 0)
   const totalEvilAttacks = input.evil.reduce((s, u) => s + Math.max(0, Math.floor(u.A)), 0)
@@ -100,15 +100,15 @@ export async function runExact(input: BattleInput): Promise<EngineResult> {
   for (const u of input.good) sumGoodPerDie += perDieWoundProb(u, defenderDforGood, { ranged: false })
   let sumEvilPerDie = 0
   for (const u of input.evil) sumEvilPerDie += perDieWoundProb(u, defenderDforEvil, { ranged: false })
-  probabilities.pSingleAttackWoundGood = totalGoodAttacks > 0 ? sumGoodPerDie / input.good.length : 0
-  probabilities.pSingleAttackWoundEvil = totalEvilAttacks > 0 ? sumEvilPerDie / input.evil.length : 0
+  probabilities.good.pSingleAttackWound = totalGoodAttacks > 0 ? sumGoodPerDie / input.good.length : 0
+  probabilities.evil.pSingleAttackWound = totalEvilAttacks > 0 ? sumEvilPerDie / input.evil.length : 0
 
   let rangedGood = 0
   let rangedEvil = 0
   for (const u of input.good) if (u.ranged) rangedGood += perDieWoundProb(u, defenderDforGood, { ranged: true })
   for (const u of input.evil) if (u.ranged) rangedEvil += perDieWoundProb(u, defenderDforEvil, { ranged: true })
-  probabilities.rangedWoundGood = rangedGood
-  probabilities.rangedWoundEvil = rangedEvil
+  probabilities.good.rangedWound = rangedGood
+  probabilities.evil.rangedWound = rangedEvil
 
   const t1 = (globalThis as any).performance.now()
   return {

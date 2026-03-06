@@ -6,8 +6,8 @@ export const input: BattleInput = {
 }
 
 export const expected = {
-  duelGoodWin: 0.5,
-  duelEvilWin: 0.5,
+  good: { duelWin: 0.5 },
+  evil: { duelWin: 0.5 },
 }
 
 export const tolerance = 0.05

@@ -1,4 +1,4 @@
-import type { BattleInput, Probabilities, Unit } from './types'
+import type { BattleInput, EngineResult, Probabilities, Unit } from './types'
 
 export function totalAttacks(input: BattleInput) {
   let sum = 0
@@ -9,8 +9,8 @@ export function totalAttacks(input: BattleInput) {
 
 export function makeEmptyProb(): Probabilities {
   return {
-    duelGoodWin: 0,
-    duelEvilWin: 0,
+    good: { duelWin: 0 },
+    evil: { duelWin: 0 },
   }
 }
 

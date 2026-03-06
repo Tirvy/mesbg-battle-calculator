@@ -109,7 +109,7 @@ export async function runMonteCarlo(
           if (!hard) {
             if (v >= toWound) {
               unitWounds++
-                if (!unit.ranged) unitMeleeWounds++
+              if (!unit.ranged) unitMeleeWounds++
             }
           } else {
             if (v >= 6) {
@@ -124,7 +124,7 @@ export async function runMonteCarlo(
               const toWoundHard = computeToWoundHard(attackerS, input.evil.length > 0 ? input.evil[0].D : 0)
               if (v2 >= toWoundHard) {
                 unitWounds++
-                    if (!unit.ranged) unitMeleeWounds++
+                if (!unit.ranged) unitMeleeWounds++
               }
             }
           }
@@ -187,10 +187,10 @@ export async function runMonteCarlo(
               }
               const toWoundHard = computeToWoundHard(attackerS, input.good.length > 0 ? input.good[0].D : 0)
               if (v2 >= toWoundHard) unitWounds++
-                if (v2 >= toWoundHard) {
-                  unitWounds++
-                  if (!unit.ranged) unitMeleeWounds++
-                }
+              if (v2 >= toWoundHard) {
+                unitWounds++
+                if (!unit.ranged) unitMeleeWounds++
+              }
             }
           }
           // melee wounds already accounted above
@@ -219,14 +219,14 @@ export async function runMonteCarlo(
     if (goodWin) {
       duelGood++
       const totalWounds = goodWoundsRolls.reduce((s, x) => s + x, 0)
-      const meleeWounds = goodWoundsRolls.reduce((s,x,i)=> s + (goodUnits[i].unit.ranged?0:x),0)
+      const meleeWounds = goodWoundsRolls.reduce((s, x, i) => s + (goodUnits[i].unit.ranged ? 0 : x), 0)
       if (meleeWounds >= 1) goodAtLeast1++
       if (meleeWounds >= 2) goodAtLeast2++
       if (meleeWounds >= 3) goodAtLeast3++
     } else {
       duelEvil++
       const totalWounds = evilWoundsRolls.reduce((s, x) => s + x, 0)
-      const meleeWounds = evilWoundsRolls.reduce((s,x,i)=> s + (evilUnits[i].unit.ranged?0:x),0)
+      const meleeWounds = evilWoundsRolls.reduce((s, x, i) => s + (evilUnits[i].unit.ranged ? 0 : x), 0)
       if (meleeWounds >= 1) evilAtLeast1++
       if (meleeWounds >= 2) evilAtLeast2++
       if (meleeWounds >= 3) evilAtLeast3++
@@ -236,20 +236,20 @@ export async function runMonteCarlo(
   const t1 = (globalThis as any).performance.now()
 
   const probabilities = makeEmptyProb()
-  probabilities.duelGoodWin = duelGood / iterations
-  probabilities.duelEvilWin = duelEvil / iterations
-  probabilities.pAtLeast1Good = goodAtLeast1 / iterations
-  probabilities.pAtLeast2Good = goodAtLeast2 / iterations
-  probabilities.pAtLeast3Good = goodAtLeast3 / iterations
-  probabilities.pAtLeast1Evil = evilAtLeast1 / iterations
-  probabilities.pAtLeast2Evil = evilAtLeast2 / iterations
-  probabilities.pAtLeast3Evil = evilAtLeast3 / iterations
+  probabilities.good.duelWin = duelGood / iterations
+  probabilities.evil.duelWin = duelEvil / iterations
+  probabilities.good.pAtLeast1Wound = goodAtLeast1 / iterations
+  probabilities.good.pAtLeast2Wounds = goodAtLeast2 / iterations
+  probabilities.good.pAtLeast3Wounds = goodAtLeast3 / iterations
+  probabilities.evil.pAtLeast1Wound = evilAtLeast1 / iterations
+  probabilities.evil.pAtLeast2Wounds = evilAtLeast2 / iterations
+  probabilities.evil.pAtLeast3Wounds = evilAtLeast3 / iterations
 
-  probabilities.pSingleAttackWoundGood = goodMeleeDice > 0 ? goodMeleeWounds / goodMeleeDice : 0
-  probabilities.pSingleAttackWoundEvil = evilMeleeDice > 0 ? evilMeleeWounds / evilMeleeDice : 0
+  probabilities.good.pSingleAttackWound = goodMeleeDice > 0 ? goodMeleeWounds / goodMeleeDice : 0
+  probabilities.evil.pSingleAttackWound = evilMeleeDice > 0 ? evilMeleeWounds / evilMeleeDice : 0
 
-  probabilities.rangedWoundGood = goodRangedDice > 0 ? goodRangedWounds / goodRangedDice : 0
-  probabilities.rangedWoundEvil = evilRangedDice > 0 ? evilRangedWounds / evilRangedDice : 0
+  probabilities.good.rangedWound = goodRangedDice > 0 ? goodRangedWounds / goodRangedDice : 0
+  probabilities.evil.rangedWound = evilRangedDice > 0 ? evilRangedWounds / evilRangedDice : 0
 
   return {
     computationTimeMs: t1 - t0,
