@@ -1,14 +1,16 @@
-import type { BattleInput, EngineResult } from './types'
+import type { BattleInput, EngineResult, Unit } from './types'
 import {
   makeEmptyProb,
   perDieDist,
   computeToWound,
   computeToWoundHard,
-  perDieWoundProb,
 } from './engine-common'
 
-// Simple xorshift32 PRNG for optional reproducibility
-function xorshift32(seed: number) {
+// ── RNG ───────────────────────────────────────────────────────────
+
+type RNG = () => number
+
+function xorshift32(seed: number): RNG {
   let x = seed >>> 0
   return function () {
     x ^= x << 13
@@ -21,239 +23,285 @@ function xorshift32(seed: number) {
   }
 }
 
-export async function runMonteCarlo(
-  input: BattleInput,
-  iterations = 100000,
-  seed?: number
-): Promise<EngineResult> {
-  const rng = seed == null ? Math.random : xorshift32(seed)
+// ── Precomputed unit descriptor ───────────────────────────────────
 
-  const t0 = (globalThis as any).performance.now()
+interface UnitDescriptor {
+  unit: Unit
+  pd: number[]
+  A: number
+}
 
-  // Precompute unit info arrays to avoid allocations inside loop
-  const goodUnits = input.good.map(u => ({
+function buildUnitDescriptors(units: Unit[]): UnitDescriptor[] {
+  return units.map(u => ({
     unit: u,
     pd: perDieDist(u),
     A: Math.max(0, Math.floor(u.A)),
   }))
-  const evilUnits = input.evil.map(u => ({
-    unit: u,
-    pd: perDieDist(u),
-    A: Math.max(0, Math.floor(u.A)),
-  }))
+}
 
-  let duelGood = 0
-  let duelEvil = 0
-  let goodAtLeast1 = 0
-  let goodAtLeast2 = 0
-  let goodAtLeast3 = 0
-  let evilAtLeast1 = 0
-  let evilAtLeast2 = 0
-  let evilAtLeast3 = 0
+// ── Per-side counters ─────────────────────────────────────────────
 
-  // counters for single-attack and ranged probabilities
-  let goodTotalWounds = 0
-  let evilTotalWounds = 0
-  let goodTotalAttackDice = 0
-  let evilTotalAttackDice = 0
-  let goodRangedWounds = 0
-  let evilRangedWounds = 0
-  let goodRangedDice = 0
-  let evilRangedDice = 0
-  // melee-only counters
-  let goodMeleeWounds = 0
-  let evilMeleeWounds = 0
-  let goodMeleeDice = 0
-  let evilMeleeDice = 0
+interface SideCounters {
+  duelWins: number
+  atLeast1: number
+  atLeast2: number
+  atLeast3: number
+  totalWounds: number
+  totalAttackDice: number
+  rangedWounds: number
+  rangedDice: number
+  meleeWounds: number
+  meleeDice: number
+}
 
-  for (let it = 0; it < iterations; it++) {
-    // simulate good side dice
-    let goodMax = 0
-    let goodMaxFv = -Infinity
-    const goodWoundsRolls: number[] = []
-    for (const g of goodUnits) {
-      const { unit, pd, A } = g
-      goodTotalAttackDice += A
-      if (unit.ranged) {
-        goodRangedDice += A
-      } else {
-        goodMeleeDice += A
-      }
-      let unitWounds = 0
-      // track melee wounds separately for this unit
-      let unitMeleeWounds = 0
-      for (let a = 0; a < A; a++) {
-        const r = rng()
-        let acc = 0
-        let v = 1
-        for (; v <= 6; v++) {
-          acc += pd[v]
-          if (r <= acc) break
-        }
-        if (v > 6) v = 6
-        if (v > goodMax) {
-          goodMax = v
-          goodMaxFv = unit.Fv
-        } else if (v === goodMax) {
-          if (unit.Fv > goodMaxFv) goodMaxFv = unit.Fv
-        }
-        // wound logic
-        let attackerS = unit.S
-        let hit = true
-        if (unit.ranged) {
-          hit = v >= unit.Sv
-          attackerS = unit.SS
-        }
-        if (hit) {
-          const { raw, toWound, hard } = computeToWound(attackerS, input.evil.length > 0 ? input.evil[0].D : 0)
-          if (!hard) {
-            if (v >= toWound) {
-              unitWounds++
-              if (!unit.ranged) unitMeleeWounds++
-            }
-          } else {
-            if (v >= 6) {
-              const r2 = rng()
-              const pd2 = perDieDist(unit)
-              let acc2 = 0
-              let v2 = 1
-              for (; v2 <= 6; v2++) {
-                acc2 += pd2[v2]
-                if (r2 <= acc2) break
-              }
-              const toWoundHard = computeToWoundHard(attackerS, input.evil.length > 0 ? input.evil[0].D : 0)
-              if (v2 >= toWoundHard) {
-                unitWounds++
-                if (!unit.ranged) unitMeleeWounds++
-              }
-            }
-          }
-        }
-      }
-      goodWoundsRolls.push(unitWounds)
-      goodTotalWounds += unitWounds
-      if (!unit.ranged) goodMeleeWounds += unitMeleeWounds
-      if (unit.ranged) goodRangedWounds += unitWounds
-    }
+function emptySideCounters(): SideCounters {
+  return {
+    duelWins: 0,
+    atLeast1: 0,
+    atLeast2: 0,
+    atLeast3: 0,
+    totalWounds: 0,
+    totalAttackDice: 0,
+    rangedWounds: 0,
+    rangedDice: 0,
+    meleeWounds: 0,
+    meleeDice: 0,
+  }
+}
 
-    // evil side
-    let evilMax = 0
-    let evilMaxFv = -Infinity
-    const evilWoundsRolls: number[] = []
-    for (const g of evilUnits) {
-      const { unit, pd, A } = g
-      evilTotalAttackDice += A
-      if (unit.ranged) evilRangedDice += A
-      else evilMeleeDice += A
-      let unitWounds = 0
-      let unitMeleeWounds = 0
-      for (let a = 0; a < A; a++) {
-        const r = rng()
-        let acc = 0
-        let v = 1
-        for (; v <= 6; v++) {
-          acc += pd[v]
-          if (r <= acc) break
-        }
-        if (v > 6) v = 6
-        if (v > evilMax) {
-          evilMax = v
-          evilMaxFv = unit.Fv
-        } else if (v === evilMax) {
-          if (unit.Fv > evilMaxFv) evilMaxFv = unit.Fv
-        }
-        let attackerS = unit.S
-        let hit = true
-        if (unit.ranged) {
-          hit = v >= unit.Sv
-          attackerS = unit.SS
-        }
-        if (hit) {
-          const { raw, toWound, hard } = computeToWound(attackerS, input.good.length > 0 ? input.good[0].D : 0)
-          if (!hard) {
-            if (v >= toWound) {
-              unitWounds++
-              if (!unit.ranged) unitMeleeWounds++
-            }
-          } else {
-            if (v >= 6) {
-              const r2 = rng()
-              const pd2 = perDieDist(unit)
-              let acc2 = 0
-              let v2 = 1
-              for (; v2 <= 6; v2++) {
-                acc2 += pd2[v2]
-                if (r2 <= acc2) break
-              }
-              const toWoundHard = computeToWoundHard(attackerS, input.good.length > 0 ? input.good[0].D : 0)
-              if (v2 >= toWoundHard) unitWounds++
-              if (v2 >= toWoundHard) {
-                unitWounds++
-                if (!unit.ranged) unitMeleeWounds++
-              }
-            }
-          }
-          // melee wounds already accounted above
-        }
-      }
-      evilWoundsRolls.push(unitWounds)
-      evilTotalWounds += unitWounds
-      if (!unit.ranged) evilMeleeWounds += unitMeleeWounds
-      if (unit.ranged) evilRangedWounds += unitWounds
-    }
+// ── Per-iteration side result (returned by simulateSide) ──────────
 
-    // determine duel winner
-    let goodWin = false
-    let evilWin = false
-    if (goodMax > evilMax) goodWin = true
-    else if (goodMax < evilMax) evilWin = true
-    else {
-      if (goodMaxFv > evilMaxFv) goodWin = true
-      else if (goodMaxFv < evilMaxFv) evilWin = true
-      else {
-        if (rng() < 0.5) goodWin = true
-        else evilWin = true
-      }
-    }
+interface SideIterationResult {
+  maxRoll: number
+  maxFv: number
+  woundsPerUnit: number[]
+  totalWounds: number
+  meleeWounds: number
+  rangedWounds: number
+  totalDice: number
+  meleeDice: number
+  rangedDice: number
+}
 
-    if (goodWin) {
-      duelGood++
-      const totalWounds = goodWoundsRolls.reduce((s, x) => s + x, 0)
-      const meleeWounds = goodWoundsRolls.reduce((s, x, i) => s + (goodUnits[i].unit.ranged ? 0 : x), 0)
-      if (meleeWounds >= 1) goodAtLeast1++
-      if (meleeWounds >= 2) goodAtLeast2++
-      if (meleeWounds >= 3) goodAtLeast3++
+// ── Single die roll ───────────────────────────────────────────────
+
+function rollDie(pd: number[], rng: RNG): number {
+  const r = rng()
+  let acc = 0
+  let v = 1
+  for (; v <= 6; v++) {
+    acc += pd[v]
+    if (r <= acc) break
+  }
+  return v > 6 ? 6 : v
+}
+
+// ── Wound resolution for a single attack die ─────────────────────
+
+function resolveWound(
+  unit: Unit,
+  dieValue: number,
+  defenderD: number,
+  rng: RNG,
+): boolean {
+  let attackerS = unit.S
+  let hit = true
+
+  if (unit.ranged) {
+    hit = dieValue >= unit.Sv
+    attackerS = unit.SS
+  }
+
+  if (!hit) return false
+
+  const { toWound, hard } = computeToWound(attackerS, defenderD)
+
+  if (!hard) {
+    return dieValue >= toWound
+  }
+
+  // Hard-to-wound: only on a natural 6 do we get a second roll
+  if (dieValue < 6) return false
+
+  const pd2 = perDieDist(unit)
+  const v2 = rollDie(pd2, rng)
+  const toWoundHard = computeToWoundHard(attackerS, defenderD)
+  return v2 >= toWoundHard
+}
+
+// ── Simulate one side for a single iteration ─────────────────────
+
+function simulateSide(
+  descriptors: UnitDescriptor[],
+  defenderD: number,
+  rng: RNG,
+): SideIterationResult {
+  let maxRoll = 0
+  let maxFv = -Infinity
+  const woundsPerUnit: number[] = []
+  let totalWounds = 0
+  let meleeWounds = 0
+  let rangedWounds = 0
+  let totalDice = 0
+  let meleeDice = 0
+  let rangedDice = 0
+
+  for (const { unit, pd, A } of descriptors) {
+    totalDice += A
+    if (unit.ranged) {
+      rangedDice += A
     } else {
-      duelEvil++
-      const totalWounds = evilWoundsRolls.reduce((s, x) => s + x, 0)
-      const meleeWounds = evilWoundsRolls.reduce((s, x, i) => s + (evilUnits[i].unit.ranged ? 0 : x), 0)
-      if (meleeWounds >= 1) evilAtLeast1++
-      if (meleeWounds >= 2) evilAtLeast2++
-      if (meleeWounds >= 3) evilAtLeast3++
+      meleeDice += A
+    }
+
+    let unitWounds = 0
+
+    for (let a = 0; a < A; a++) {
+      const v = rollDie(pd, rng)
+
+      // Track highest roll for duel resolution
+      if (v > maxRoll) {
+        maxRoll = v
+        maxFv = unit.Fv
+      } else if (v === maxRoll && unit.Fv > maxFv) {
+        maxFv = unit.Fv
+      }
+
+      if (resolveWound(unit, v, defenderD, rng)) {
+        unitWounds++
+      }
+    }
+
+    woundsPerUnit.push(unitWounds)
+    totalWounds += unitWounds
+
+    if (unit.ranged) {
+      rangedWounds += unitWounds
+    } else {
+      meleeWounds += unitWounds
     }
   }
 
-  const t1 = (globalThis as any).performance.now()
+  return {
+    maxRoll,
+    maxFv,
+    woundsPerUnit,
+    totalWounds,
+    meleeWounds,
+    rangedWounds,
+    totalDice,
+    meleeDice,
+    rangedDice,
+  }
+}
 
+// ── Duel resolution ──────────────────────────────────────────────
+
+function resolveDuel(
+  goodResult: SideIterationResult,
+  evilResult: SideIterationResult,
+  rng: RNG,
+): 'good' | 'evil' {
+  if (goodResult.maxRoll > evilResult.maxRoll) return 'good'
+  if (goodResult.maxRoll < evilResult.maxRoll) return 'evil'
+  if (goodResult.maxFv > evilResult.maxFv) return 'good'
+  if (goodResult.maxFv < evilResult.maxFv) return 'evil'
+  return rng() < 0.5 ? 'good' : 'evil'
+}
+
+// ── Accumulate per-iteration results into running counters ────────
+
+function accumulateIterationResult(
+  result: SideIterationResult,
+  descriptors: UnitDescriptor[],
+  counters: SideCounters,
+  wonDuel: boolean,
+): void {
+  counters.totalWounds += result.totalWounds
+  counters.totalAttackDice += result.totalDice
+  counters.meleeWounds += result.meleeWounds
+  counters.meleeDice += result.meleeDice
+  counters.rangedWounds += result.rangedWounds
+  counters.rangedDice += result.rangedDice
+
+  if (wonDuel) {
+    counters.duelWins++
+    const meleeWounds = result.woundsPerUnit.reduce(
+      (sum, w, i) => sum + (descriptors[i].unit.ranged ? 0 : w),
+      0,
+    )
+    if (meleeWounds >= 1) counters.atLeast1++
+    if (meleeWounds >= 2) counters.atLeast2++
+    if (meleeWounds >= 3) counters.atLeast3++
+  }
+}
+
+// ── Build final result from counters ─────────────────────────────
+
+function buildResult(
+  goodCounters: SideCounters,
+  evilCounters: SideCounters,
+  iterations: number,
+  computationTimeMs: number,
+): EngineResult {
   const probabilities = makeEmptyProb()
-  probabilities.good.duelWin = duelGood / iterations
-  probabilities.evil.duelWin = duelEvil / iterations
-  probabilities.good.pAtLeast1Wound = goodAtLeast1 / iterations
-  probabilities.good.pAtLeast2Wounds = goodAtLeast2 / iterations
-  probabilities.good.pAtLeast3Wounds = goodAtLeast3 / iterations
-  probabilities.evil.pAtLeast1Wound = evilAtLeast1 / iterations
-  probabilities.evil.pAtLeast2Wounds = evilAtLeast2 / iterations
-  probabilities.evil.pAtLeast3Wounds = evilAtLeast3 / iterations
 
-  probabilities.good.pSingleAttackWound = goodMeleeDice > 0 ? goodMeleeWounds / goodMeleeDice : 0
-  probabilities.evil.pSingleAttackWound = evilMeleeDice > 0 ? evilMeleeWounds / evilMeleeDice : 0
+  probabilities.good.duelWin = goodCounters.duelWins / iterations
+  probabilities.evil.duelWin = evilCounters.duelWins / iterations
 
-  probabilities.good.rangedWound = goodRangedDice > 0 ? goodRangedWounds / goodRangedDice : 0
-  probabilities.evil.rangedWound = evilRangedDice > 0 ? evilRangedWounds / evilRangedDice : 0
+  probabilities.good.pAtLeast1Wound = goodCounters.atLeast1 / iterations
+  probabilities.good.pAtLeast2Wounds = goodCounters.atLeast2 / iterations
+  probabilities.good.pAtLeast3Wounds = goodCounters.atLeast3 / iterations
+  probabilities.evil.pAtLeast1Wound = evilCounters.atLeast1 / iterations
+  probabilities.evil.pAtLeast2Wounds = evilCounters.atLeast2 / iterations
+  probabilities.evil.pAtLeast3Wounds = evilCounters.atLeast3 / iterations
+
+  probabilities.good.pSingleAttackWound =
+    goodCounters.meleeDice > 0 ? goodCounters.meleeWounds / goodCounters.meleeDice : 0
+  probabilities.evil.pSingleAttackWound =
+    evilCounters.meleeDice > 0 ? evilCounters.meleeWounds / evilCounters.meleeDice : 0
+
+  probabilities.good.rangedWound =
+    goodCounters.rangedDice > 0 ? goodCounters.rangedWounds / goodCounters.rangedDice : 0
+  probabilities.evil.rangedWound =
+    evilCounters.rangedDice > 0 ? evilCounters.rangedWounds / evilCounters.rangedDice : 0
 
   return {
-    computationTimeMs: t1 - t0,
+    computationTimeMs,
     mode: 'Fast',
     probabilities,
   }
+}
+
+// ── Public API ────────────────────────────────────────────────────
+
+export async function runMonteCarlo(
+  input: BattleInput,
+  iterations = 100000,
+  seed?: number,
+): Promise<EngineResult> {
+  const rng: RNG = seed == null ? Math.random : xorshift32(seed)
+  const t0 = (globalThis as any).performance.now()
+
+  const goodDescriptors = buildUnitDescriptors(input.good)
+  const evilDescriptors = buildUnitDescriptors(input.evil)
+
+  const goodDefenderD = input.good.length > 0 ? input.good[0].D : 0
+  const evilDefenderD = input.evil.length > 0 ? input.evil[0].D : 0
+
+  const goodCounters = emptySideCounters()
+  const evilCounters = emptySideCounters()
+
+  for (let it = 0; it < iterations; it++) {
+    const goodResult = simulateSide(goodDescriptors, evilDefenderD, rng)
+    const evilResult = simulateSide(evilDescriptors, goodDefenderD, rng)
+
+    const winner = resolveDuel(goodResult, evilResult, rng)
+
+    accumulateIterationResult(goodResult, goodDescriptors, goodCounters, winner === 'good')
+    accumulateIterationResult(evilResult, evilDescriptors, evilCounters, winner === 'evil')
+  }
+
+  const t1 = (globalThis as any).performance.now()
+  return buildResult(goodCounters, evilCounters, iterations, t1 - t0)
 }
