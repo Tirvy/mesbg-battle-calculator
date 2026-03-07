@@ -5,33 +5,59 @@ import * as s2 from './scenarios/scenario2'
 import * as s3 from './scenarios/scenario3'
 import * as s4 from './scenarios/scenario4'
 import * as s5 from './scenarios/scenario5'
+import * as sR1 from './scenarios/scenario-ranged-1'
+import * as sR2 from './scenarios/scenario-ranged-2'
+import * as sR3 from './scenarios/scenario-ranged-3'
 
-const scenarios = [s1, s2, s3, s5]
+const scenarios = [
+  { file: 'scenario1.ts', s: s1 },
+  { file: 'scenario2.ts', s: s2 },
+  { file: 'scenario3.ts', s: s3 },
+  { file: 'scenario5.ts', s: s5 },
+  { file: 'scenario-ranged-1.ts', s: sR1 },
+  { file: 'scenario-ranged-2.ts', s: sR2 },
+  { file: 'scenario-ranged-3.ts', s: sR3 },
+]
 
 describe('Engine scaffold tests', () => {
   it('Monte Carlo returns structure and within tolerance for simple scenarios', async () => {
-    for (const s of scenarios) {
-      const mc = await runMonteCarlo(s.input, 2000, 12345)
-      // Validate basic shape
-      expect(mc.probabilities.good).toHaveProperty('duelWin')
-      expect(mc.probabilities.evil).toHaveProperty('duelWin')
-
-      // Compare to expected within tolerance
-      expect(Math.abs((mc.probabilities.good.duelWin ?? 0) - s.expected.good.duelWin)).toBeLessThanOrEqual(s.tolerance)
-      expect(Math.abs((mc.probabilities.evil.duelWin ?? 0) - s.expected.evil.duelWin)).toBeLessThanOrEqual(s.tolerance)
+    for (const { file, s } of scenarios) {
+      try {
+        const mc = await runMonteCarlo(s.input, 2000, 12345)
+        // Validate basic shape and compare to expected within tolerance
+        for (const [key, value] of Object.entries(s.expected.good)) {
+          const actual = (mc.probabilities.good as any)[key] ?? 0
+          expect(Math.abs(actual - value)).toBeLessThanOrEqual(s.tolerance)
+        }
+        for (const [key, value] of Object.entries(s.expected.evil)) {
+          const actual = (mc.probabilities.evil as any)[key] ?? 0
+          expect(Math.abs(actual - value)).toBeLessThanOrEqual(s.tolerance)
+        }
+      } catch (e) {
+        console.error(`Failed scenario file: ${file}`)
+        throw e
+      }
     }
   })
 
   it('Exact runs for small scenarios', async () => {
-    for (const s of scenarios) {
-      const ex = await runExact(s.input)
-      expect(ex.mode).toBe('Exact')
-      expect(ex.probabilities.good).toHaveProperty('duelWin')
-      expect(ex.probabilities.evil).toHaveProperty('duelWin')
-
-      // Compare to expected within tolerance
-      expect(Math.abs((ex.probabilities.good.duelWin ?? 0) - s.expected.good.duelWin)).toBeLessThanOrEqual(s.tolerance)
-      expect(Math.abs((ex.probabilities.evil.duelWin ?? 0) - s.expected.evil.duelWin)).toBeLessThanOrEqual(s.tolerance)
+    for (const { file, s } of scenarios) {
+      try {
+        const ex = await runExact(s.input)
+        expect(ex.mode).toBe('Exact')
+        // Compare to expected within tolerance
+        for (const [key, value] of Object.entries(s.expected.good)) {
+          const actual = (ex.probabilities.good as any)[key] ?? 0
+          expect(Math.abs(actual - value)).toBeLessThanOrEqual(s.tolerance)
+        }
+        for (const [key, value] of Object.entries(s.expected.evil)) {
+          const actual = (ex.probabilities.evil as any)[key] ?? 0
+          expect(Math.abs(actual - value)).toBeLessThanOrEqual(s.tolerance)
+        }
+      } catch (e) {
+        console.error(`Failed scenario file: ${file}`)
+        throw e
+      }
     }
   })
 
