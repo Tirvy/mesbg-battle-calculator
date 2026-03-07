@@ -21,6 +21,7 @@ export type PlayerProbabilities = {
   pAtLeast2Wounds?: number
   pAtLeast3Wounds?: number
   rangedWound?: number
+  rangedHitAndWound?: number
 }
 
 export type Probabilities = {

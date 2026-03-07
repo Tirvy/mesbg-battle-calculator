@@ -59,7 +59,7 @@ export function computeToWoundHard(attackerS: number, defenderD: number) {
 
 export function perDieWoundProb(unit: Unit, defenderFirstD: number, opts: { ranged?: boolean } = {}) {
   const attackerS = opts.ranged ? unit.SS : unit.S
-  const pd = perDieDistWound(unit)
+  const pd = perDieDistWound(unit, opts.ranged)
   const { raw, toWound, hard } = computeToWound(attackerS, defenderFirstD)
   if (!hard) {
     let sum = 0
@@ -67,7 +67,7 @@ export function perDieWoundProb(unit: Unit, defenderFirstD: number, opts: { rang
     return sum
   }
   const toWoundHard = computeToWoundHard(attackerS, defenderFirstD)
-  const hardPd = perDieDistWound(unit)
+  const hardPd = perDieDistWound(unit, opts.ranged)
   let pHard = 0
   for (let v = toWoundHard; v <= 6; v++) pHard += hardPd[v]
   return pd[6] * pHard
@@ -78,7 +78,7 @@ export type SidePMF = Array<Map<number, { prob: number; wounds: WoundDist }>>
 
 export function buildSidePMF(units: Unit[], defenderFirstD: number, isRangedSide = false): SidePMF {
   const m = units.length
-  const pdPerUnit = units.map(perDieDistWound)
+  const pdPerUnit = units.map(u => perDieDistWound(u, isRangedSide))
   const sidePMF: SidePMF = []
 
   for (let k = 1; k <= 6; k++) {
@@ -186,4 +186,4 @@ export function buildSidePMF(units: Unit[], defenderFirstD: number, isRangedSide
   return sidePMF
 }
 
-export { BattleInput, EngineResult, Probabilities, Unit }
+export type { BattleInput, EngineResult, Probabilities, Unit }

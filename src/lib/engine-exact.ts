@@ -1,4 +1,4 @@
-import type { BattleInput, EngineResult } from './types'
+import type { BattleInput, EngineResult, Probabilities, Unit } from './types'
 import {
   totalAttacks,
   makeEmptyProb,
@@ -105,10 +105,25 @@ export async function runExact(input: BattleInput): Promise<EngineResult> {
 
   let rangedGood = 0
   let rangedEvil = 0
-  for (const u of input.good) if (u.ranged) rangedGood += perDieWoundProb(u, defenderDforGood, { ranged: true })
-  for (const u of input.evil) if (u.ranged) rangedEvil += perDieWoundProb(u, defenderDforEvil, { ranged: true })
+  for (const u of input.good) rangedGood += perDieWoundProb(u, defenderDforGood, { ranged: true })
+  for (const u of input.evil) rangedEvil += perDieWoundProb(u, defenderDforEvil, { ranged: true })
   probabilities.good.rangedWound = rangedGood
   probabilities.evil.rangedWound = rangedEvil
+
+  // rangedHitAndWound: P(hit) × P(wound|hit) for each unit
+  // P(hit) = (7 - Sv) / 6 (probability of rolling >= Sv on d6)
+  let hitAndWoundGood = 0
+  let hitAndWoundEvil = 0
+  for (const u of input.good) {
+    const pHit = Math.max(0, Math.min(6, 7 - u.Sv)) / 6
+    hitAndWoundGood += pHit * perDieWoundProb(u, defenderDforGood, { ranged: true })
+  }
+  for (const u of input.evil) {
+    const pHit = Math.max(0, Math.min(6, 7 - u.Sv)) / 6
+    hitAndWoundEvil += pHit * perDieWoundProb(u, defenderDforEvil, { ranged: true })
+  }
+  probabilities.good.rangedHitAndWound = hitAndWoundGood
+  probabilities.evil.rangedHitAndWound = hitAndWoundEvil
 
   const t1 = (globalThis as any).performance.now()
   return {

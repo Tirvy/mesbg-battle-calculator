@@ -48,6 +48,7 @@ interface SideCounters {
   atLeast2: number
   atLeast3: number
   rangedWounds: number
+  rangedHitAndWounds: number
   rangedDice: number
   meleeWounds: number
   meleeDice: number
@@ -60,6 +61,7 @@ function emptySideCounters(): SideCounters {
     atLeast2: 0,
     atLeast3: 0,
     rangedWounds: 0,
+    rangedHitAndWounds: 0,
     rangedDice: 0,
     meleeWounds: 0,
     meleeDice: 0,
@@ -73,6 +75,7 @@ interface SideIterationResult {
   maxFv: number
   meleeWounds: number
   rangedWounds: number
+  rangedHitAndWounds: number
   meleeDice: number
   rangedDice: number
 }
@@ -131,6 +134,7 @@ function simulateSide(
   let maxFv = -Infinity
   let meleeWounds = 0
   let rangedWounds = 0
+  let rangedHitAndWounds = 0
   let meleeDice = 0
   let rangedDice = 0
 
@@ -152,6 +156,12 @@ function simulateSide(
       meleeWounds += resolveWound(unit, false, defenderD, rng);
     }
     rangedWounds += resolveWound(unit, true, defenderD, rng);
+
+    // Simulate ranged hit-and-wound: roll d6 to hit (>= Sv), then roll to wound
+    const hitRoll = Math.floor(rng() * 6) + 1
+    if (hitRoll >= unit.Sv) {
+      rangedHitAndWounds += resolveWound(unit, true, defenderD, rng)
+    }
   }
 
   maxFv = descriptors.reduce((maxFv, descriptor) => {
@@ -166,6 +176,7 @@ function simulateSide(
     maxFv,
     meleeWounds,
     rangedWounds,
+    rangedHitAndWounds,
     meleeDice,
     rangedDice,
   }
@@ -196,6 +207,7 @@ function accumulateIterationResult(
   counters.meleeWounds += result.meleeWounds
   counters.meleeDice += result.meleeDice
   counters.rangedWounds += result.rangedWounds
+  counters.rangedHitAndWounds += result.rangedHitAndWounds
   counters.rangedDice += result.rangedDice
 
   if (wonDuel) {
@@ -236,6 +248,11 @@ function buildResult(
     goodCounters.rangedDice > 0 ? goodCounters.rangedWounds / goodCounters.rangedDice : 0
   probabilities.evil.rangedWound =
     evilCounters.rangedDice > 0 ? evilCounters.rangedWounds / evilCounters.rangedDice : 0
+
+  probabilities.good.rangedHitAndWound =
+    goodCounters.rangedDice > 0 ? goodCounters.rangedHitAndWounds / goodCounters.rangedDice : 0
+  probabilities.evil.rangedHitAndWound =
+    evilCounters.rangedDice > 0 ? evilCounters.rangedHitAndWounds / evilCounters.rangedDice : 0
 
   return {
     computationTimeMs,
