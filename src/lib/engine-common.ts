@@ -14,7 +14,7 @@ export function makeEmptyProb(): Probabilities {
   }
 }
 
-export function perDieDist(unit: Unit) {
+export function perDieDistDuel(unit: Unit) {
   const p = new Array(7).fill(0)
   if (unit.twoHanded) {
     p[1] = 2 / 6
@@ -23,6 +23,21 @@ export function perDieDist(unit: Unit) {
     p[4] = 1 / 6
     p[5] = 1 / 6
     p[6] = 0
+  } else {
+    for (let v = 1; v <= 6; v++) p[v] = 1 / 6
+  }
+  return p
+}
+
+export function perDieDistWound(unit: Unit, ranged = false) {
+  const p = new Array(7).fill(0)
+  if (unit.twoHanded && !ranged) {
+    p[1] = 0
+    p[2] = 1 / 6
+    p[3] = 1 / 6
+    p[4] = 1 / 6
+    p[5] = 1 / 6
+    p[6] = 2 / 6
   } else {
     for (let v = 1; v <= 6; v++) p[v] = 1 / 6
   }
@@ -42,16 +57,9 @@ export function computeToWoundHard(attackerS: number, defenderD: number) {
   return th
 }
 
-export function pDieAtLeast(unit: Unit, threshold: number) {
-  const pd = perDieDist(unit)
-  let s = 0
-  for (let v = threshold; v <= 6; v++) s += pd[v]
-  return s
-}
-
 export function perDieWoundProb(unit: Unit, defenderFirstD: number, opts: { ranged?: boolean } = {}) {
   const attackerS = opts.ranged ? unit.SS : unit.S
-  const pd = perDieDist(unit)
+  const pd = perDieDistWound(unit)
   const { raw, toWound, hard } = computeToWound(attackerS, defenderFirstD)
   if (!hard) {
     let sum = 0
@@ -59,7 +67,7 @@ export function perDieWoundProb(unit: Unit, defenderFirstD: number, opts: { rang
     return sum
   }
   const toWoundHard = computeToWoundHard(attackerS, defenderFirstD)
-  const hardPd = perDieDist(unit)
+  const hardPd = perDieDistWound(unit)
   let pHard = 0
   for (let v = toWoundHard; v <= 6; v++) pHard += hardPd[v]
   return pd[6] * pHard
@@ -70,7 +78,7 @@ export type SidePMF = Array<Map<number, { prob: number; wounds: WoundDist }>>
 
 export function buildSidePMF(units: Unit[], defenderFirstD: number, isRangedSide = false): SidePMF {
   const m = units.length
-  const pdPerUnit = units.map(perDieDist)
+  const pdPerUnit = units.map(perDieDistWound)
   const sidePMF: SidePMF = []
 
   for (let k = 1; k <= 6; k++) {
@@ -98,7 +106,7 @@ export function buildSidePMF(units: Unit[], defenderFirstD: number, isRangedSide
                 } else {
                   if (v >= 6) {
                     const toWoundHard = computeToWoundHard(attackerS, defenderFirstD)
-                    const hardPd = perDieDist(unit)
+                    const hardPd = perDieDistWound(unit)
                     let ph = 0
                     for (let vv = toWoundHard; vv <= 6; vv++) ph += hardPd[vv]
                     woundProb = ph
@@ -117,7 +125,7 @@ export function buildSidePMF(units: Unit[], defenderFirstD: number, isRangedSide
                   } else {
                     if (v >= 6) {
                       const toWoundHard = computeToWoundHard(attackerS, defenderFirstD)
-                      const hardPd = perDieDist(unit)
+                      const hardPd = perDieDistWound(unit)
                       let ph = 0
                       for (let vv = toWoundHard; vv <= 6; vv++) ph += hardPd[vv]
                       woundProb = ph
