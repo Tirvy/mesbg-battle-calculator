@@ -1,19 +1,19 @@
 import { describe, it, expect } from 'vitest'
 import { runMonteCarlo, runExact } from '../src/lib/engine'
-import * as s1 from './scenarios/scenario1'
-import * as s2 from './scenarios/scenario2'
-import * as s3 from './scenarios/scenario3'
-import * as s4 from './scenarios/scenario4'
-import * as s5 from './scenarios/scenario5'
+import * as sD1 from './scenarios/scenario-duel-1'
+import * as sD2 from './scenarios/scenario-duel-2'
+import * as sD3 from './scenarios/scenario-duel-3'
+import * as sD4 from './scenarios/scenario-duel-4'
+import * as sreject1 from './scenarios/scenario-reject-toomany'
 import * as sR1 from './scenarios/scenario-ranged-1'
 import * as sR2 from './scenarios/scenario-ranged-2'
 import * as sR3 from './scenarios/scenario-ranged-3'
 
 const scenarios = [
-  { file: 'scenario1.ts', s: s1 },
-  { file: 'scenario2.ts', s: s2 },
-  { file: 'scenario3.ts', s: s3 },
-  { file: 'scenario5.ts', s: s5 },
+  { file: 'scenario-duel-1.ts', s: sD1 },
+  { file: 'scenario-duel-2.ts', s: sD2 },
+  { file: 'scenario-duel-3.ts', s: sD3 },
+  { file: 'scenario-duel-4.ts', s: sD4 },
   { file: 'scenario-ranged-1.ts', s: sR1 },
   { file: 'scenario-ranged-2.ts', s: sR2 },
   { file: 'scenario-ranged-3.ts', s: sR3 },
@@ -63,7 +63,7 @@ describe('Engine scaffold tests', () => {
 
   it('Exact rejects scenarios with >15 total attacks', async () => {
     await expect(async () => {
-      await runExact(s4.input)
+      await runExact(sreject1.input)
     }).rejects.toThrow('Exact mode disabled: more than 15 total attacks would result in excessive computation time. Please use Fast mode.')
   })
 })
