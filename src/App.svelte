@@ -50,26 +50,6 @@
 
 <main>
   <h1>ME SBG Battle Calculator (scaffold)</h1>
-  <div>
-    <label>Mode:</label>
-    <label>
-      <input type="radio" bind:group={mode} value="Fast" />
-      Fast (Monte Carlo)
-    </label>
-    <label>
-      <input type="radio" bind:group={mode} value="Exact" />
-      Exact
-    </label>
-    <label style="margin-left:1rem">Iterations:
-      <input type="number" bind:value={iterations} min={1} disabled={mode !== 'Fast'} />
-    </label>
-    <label style="margin-left:1rem">Seed (optional):
-      <input type="number" bind:value={seed} />
-    </label>
-    <button onclick={calculate} disabled={computing}>
-      {computing ? 'Computing…' : 'Calculate'}
-    </button>
-  </div>
 
   <section style="display:flex; flex-direction:column; gap:1rem; margin-top:1rem">
     <div>
@@ -86,6 +66,31 @@
         <UnitEditor {unit} {idx} disableD={idx !== 0} onremove={() => input.evil = [...input.evil.slice(0, idx), ...input.evil.slice(idx + 1)]} />
       {/each}
       <button onclick={() => input.evil = [...input.evil, getDefaultUnit()]}>Add Evil Unit</button>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:1rem; margin-top:1rem">
+    <div>
+      <label>Mode:</label>
+      <label>
+        <input type="radio" bind:group={mode} value="Exact" />
+        Exact
+      </label>
+      <label>
+        <input type="radio" bind:group={mode} value="Fast" />
+        Fast (Monte Carlo)
+      </label>
+      <label style="margin-left:1rem">Iterations:
+        <input type="number" bind:value={iterations} min={1} disabled={mode !== 'Fast'} />
+      </label>
+      <label style="margin-left:1rem">Seed (optional):
+        <input type="number" bind:value={seed} disabled={mode !== 'Fast'} />
+      </label>
+    </div>
+    <div>
+      <button onclick={calculate} disabled={computing}>
+        {computing ? 'Computing…' : 'Calculate'}
+      </button>
     </div>
   </section>
 
