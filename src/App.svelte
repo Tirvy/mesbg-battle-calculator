@@ -6,7 +6,7 @@
   let mode: 'Fast' | 'Exact' = $state('Fast')
   let iterations = $state(100000)
   let seed: number | null = $state(null)
-  let result: EngineResult | null = $state(null)
+  let result: EngineResult[] = $state([])
   let computing = $state(false)
 
   // utility to produce a fresh default unit object
@@ -34,12 +34,12 @@
     computing = true
     try {
       if (mode === 'Fast') {
-        result = await runMonteCarlo(input, iterations, seed ?? undefined)
+        result.push(await runMonteCarlo(input, iterations, seed ?? undefined))
       } else {
-        result = await runExact(input)
+        result.push(await runExact(input))
       }
     } catch (e) {
-      result = null
+      result = []
       // show error as alert for now
       alert(String(e))
     } finally {
@@ -94,14 +94,14 @@
     </div>
   </section>
 
-  {#if result}
+  {#each result.slice().reverse() as res}
     <section>
       <h2>Result</h2>
-      <div>Mode: {result.mode}</div>
-      <div>Computation time (ms): {result.computationTimeMs.toFixed(3)}</div>
-      <pre>{JSON.stringify(result.probabilities, null, 2)}</pre>
+      <div>Mode: {res.mode}</div>
+      <div>Computation time (ms): {res.computationTimeMs.toFixed(3)}</div>
+      <pre>{JSON.stringify(res.probabilities, null, 2)}</pre>
     </section>
-  {/if}
+  {/each}
 </main>
 
 <style>
