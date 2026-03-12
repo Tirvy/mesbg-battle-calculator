@@ -51,11 +51,14 @@
 <main>
   <h1>ME SBG Battle Calculator (scaffold)</h1>
   <div>
-    <label>Mode:
-      <select bind:value={mode}>
-        <option value="Fast">Fast (Monte Carlo)</option>
-        <option value="Exact">Exact</option>
-      </select>
+    <label>Mode:</label>
+    <label>
+      <input type="radio" bind:group={mode} value="Fast" />
+      Fast (Monte Carlo)
+    </label>
+    <label>
+      <input type="radio" bind:group={mode} value="Exact" />
+      Exact
     </label>
     <label style="margin-left:1rem">Iterations:
       <input type="number" bind:value={iterations} min={1} />
