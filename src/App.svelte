@@ -99,7 +99,24 @@
       <h2>Result</h2>
       <div>Mode: {res.mode}</div>
       <div>Computation time (ms): {res.computationTimeMs.toFixed(3)}</div>
-      <pre>{JSON.stringify(res.probabilities, null, 2)}</pre>
+      <table>
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>GOOD</th>
+            <th>EVIL</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each Object.keys(res.probabilities.good) as key}
+            <tr>
+              <td>{key}</td>
+              <td>{res.probabilities.good[key].toFixed(3)}</td>
+              <td>{res.probabilities.evil[key].toFixed(3)}</td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
     </section>
   {/each}
 </main>
@@ -107,5 +124,7 @@
 <style>
   main { padding: 1rem; font-family: system-ui, Arial }
   pre { background: #f7f7f7; padding: 0.5rem }
+  table { border-collapse: collapse; }
+  th, td { padding: 0.5rem; border: 1px solid #ddd; text-align: left; }
 </style>
 
