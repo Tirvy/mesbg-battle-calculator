@@ -61,7 +61,7 @@
       Exact
     </label>
     <label style="margin-left:1rem">Iterations:
-      <input type="number" bind:value={iterations} min={1} />
+      <input type="number" bind:value={iterations} min={1} disabled={mode !== 'Fast'} />
     </label>
     <label style="margin-left:1rem">Seed (optional):
       <input type="number" bind:value={seed} />
