@@ -4,6 +4,8 @@ import * as sD1 from './scenarios/scenario-duel-1'
 import * as sD2 from './scenarios/scenario-duel-2'
 import * as sD3 from './scenarios/scenario-duel-3'
 import * as sD4 from './scenarios/scenario-duel-4'
+import * as sD5 from './scenarios/scenario-duel-5'
+import * as sD6 from './scenarios/scenario-duel-6'
 import * as sreject1 from './scenarios/scenario-reject-toomany'
 import * as sR1 from './scenarios/scenario-ranged-1'
 import * as sR2 from './scenarios/scenario-ranged-2'
@@ -14,6 +16,8 @@ const scenarios = [
   { file: 'scenario-duel-2.ts', s: sD2 },
   { file: 'scenario-duel-3.ts', s: sD3 },
   { file: 'scenario-duel-4.ts', s: sD4 },
+  { file: 'scenario-duel-5.ts', s: sD5 },
+  { file: 'scenario-duel-6.ts', s: sD6 },
   { file: 'scenario-ranged-1.ts', s: sR1 },
   { file: 'scenario-ranged-2.ts', s: sR2 },
   { file: 'scenario-ranged-3.ts', s: sR3 },
