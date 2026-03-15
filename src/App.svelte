@@ -1,12 +1,13 @@
 <script lang="ts">
   import UnitEditor from './components/UnitEditor.svelte'
   import { runMonteCarlo, runExact } from './lib/engine'
-  import type { BattleInput, EngineResult } from './lib/types'
+  import type { BattleInput, EngineResult, Probabilities, PlayerProbabilities } from './lib/types'
 
   let mode: 'Fast' | 'Exact' = $state('Fast')
   let iterations = $state(100000)
   let seed: number | null = $state(null)
   let result: EngineResult[] = $state([])
+  let differences: Probabilities[] = $state([])
   let computing = $state(false)
 
   // utility to produce a fresh default unit object
@@ -38,8 +39,29 @@
       } else {
         result.push(await runExact(input))
       }
+      // Calculate differences to previous result
+      if (result.length >= 2) {
+        const current = result[result.length - 1]
+        const previous = result[result.length - 2]
+        const diff: Probabilities = {
+          good: {} as PlayerProbabilities,
+          evil: {} as PlayerProbabilities
+        }
+        for (const key in current.probabilities.good) {
+          if (current.probabilities.good[key] !== undefined && previous.probabilities.good[key] !== undefined) {
+            diff.good[key] = current.probabilities.good[key]! - previous.probabilities.good[key]!
+          }
+        }
+        for (const key in current.probabilities.evil) {
+          if (current.probabilities.evil[key] !== undefined && previous.probabilities.evil[key] !== undefined) {
+            diff.evil[key] = current.probabilities.evil[key]! - previous.probabilities.evil[key]!
+          }
+        }
+        differences.push(diff)
+      }
     } catch (e) {
       result = []
+      differences = []
       // show error as alert for now
       alert(String(e))
     } finally {
@@ -94,9 +116,9 @@
     </div>
   </section>
 
-  {#each result.slice().reverse() as res}
+  {#each result.slice().reverse() as res, idx}
     <section>
-      <h2>Result</h2>
+      <h2>Result {result.length - idx}</h2>
       <div>Mode: {res.mode}</div>
       <div>Computation time (ms): {res.computationTimeMs.toFixed(3)}</div>
       <table>
@@ -104,15 +126,27 @@
           <tr>
             <th>Metric</th>
             <th>GOOD</th>
+            {#if idx < differences.length}
+              <th>GOOD Δ</th>
+            {/if}
             <th>EVIL</th>
+            {#if idx < differences.length}
+              <th>EVIL Δ</th>
+            {/if}
           </tr>
         </thead>
         <tbody>
           {#each Object.keys(res.probabilities.good) as key}
             <tr>
               <td>{key}</td>
-              <td>{res.probabilities.good[key].toFixed(3)}</td>
-              <td>{res.probabilities.evil[key].toFixed(3)}</td>
+              <td>{res.probabilities.good[key]!.toFixed(3)}</td>
+              {#if idx < differences.length}
+                <td>{differences[differences.length - 1 - idx]!.good[key] !== undefined ? differences[differences.length - 1 - idx]!.good[key]!.toFixed(3) : 'N/A'}</td>
+              {/if}
+              <td>{res.probabilities.evil[key]!.toFixed(3)}</td>
+              {#if idx < differences.length}
+                <td>{differences[differences.length - 1 - idx]!.evil[key] !== undefined ? differences[differences.length - 1 - idx]!.evil[key]!.toFixed(3) : 'N/A'}</td>
+              {/if}
             </tr>
           {/each}
         </tbody>
@@ -123,7 +157,6 @@
 
 <style>
   main { padding: 1rem; font-family: system-ui, Arial }
-  pre { background: #f7f7f7; padding: 0.5rem }
   table { border-collapse: collapse; }
   th, td { padding: 0.5rem; border: 1px solid #ddd; text-align: left; }
 </style>
