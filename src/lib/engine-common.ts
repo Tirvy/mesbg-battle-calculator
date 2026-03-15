@@ -21,8 +21,8 @@ export function perDieDistDuel(unit: Unit) {
     p[2] = 1 / 6
     p[3] = 1 / 6
     p[4] = 1 / 6
-    p[5] = 1 / 6
-    p[6] = 0
+    p[5] = 0
+    p[6] = 1 / 6
   } else {
     for (let v = 1; v <= 6; v++) p[v] = 1 / 6
   }
