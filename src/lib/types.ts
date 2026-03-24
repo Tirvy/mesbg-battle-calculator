@@ -15,6 +15,7 @@ export type BattleInput = {
 }
 
 export type PlayerProbabilities = {
+  [key: string]: number | undefined
   duelWin: number
   pSingleAttackWound?: number
   pAtLeast1Wound?: number

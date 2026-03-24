@@ -9,6 +9,7 @@
   let result: EngineResult[] = $state([])
   let differences: Probabilities[] = $state([])
   let computing = $state(false)
+  const meaningfullDelta = 0.05
 
   // utility to produce a fresh default unit object
   function getDefaultUnit(): BattleInput['good'][0] {
@@ -141,11 +142,19 @@
               <td>{key}</td>
               <td>{res.probabilities.good[key]!.toFixed(3)}</td>
               {#if idx < differences.length}
-                <td>{differences[differences.length - 1 - idx]!.good[key] !== undefined ? differences[differences.length - 1 - idx]!.good[key]!.toFixed(3) : 'N/A'}</td>
+                {@const delta = differences[differences.length - 1 - idx]?.good[key]}
+                <td class:meaningful={delta !== undefined && delta > meaningfullDelta}
+                    class:negative={delta !== undefined && delta < -meaningfullDelta}>
+                  {delta !== undefined ? (delta > 0 ? '+' : '') + delta.toFixed(3) : 'N/A'}
+                </td>
               {/if}
               <td>{res.probabilities.evil[key]!.toFixed(3)}</td>
               {#if idx < differences.length}
-                <td>{differences[differences.length - 1 - idx]!.evil[key] !== undefined ? differences[differences.length - 1 - idx]!.evil[key]!.toFixed(3) : 'N/A'}</td>
+                {@const delta = differences[differences.length - 1 - idx]?.evil[key]}
+                <td class:meaningful={delta !== undefined && delta > meaningfullDelta}
+                    class:negative={delta !== undefined && delta < -meaningfullDelta}>
+                  {delta !== undefined ? (delta > 0 ? '+' : '') + delta.toFixed(3) : 'N/A'}
+                </td>
               {/if}
             </tr>
           {/each}
@@ -159,5 +168,7 @@
   main { padding: 1rem; font-family: system-ui, Arial }
   table { border-collapse: collapse; }
   th, td { padding: 0.5rem; border: 1px solid #ddd; text-align: left; }
+  .meaningful { color: #10b981; font-weight: 600; }
+  .negative { color: #ef4444; font-weight: 600; }
 </style>
 
